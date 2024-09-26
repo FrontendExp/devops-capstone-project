@@ -6,6 +6,10 @@ metadata:
 spec:
   workspaces:
     - name: pipeline-workspace
+  params:
+    - name: build-image
+      description: 'The image to build and push'
+      default: 'docker.io/your-repo/your-image:latest'
   tasks:
     - name: clone
       taskRef:
@@ -18,7 +22,7 @@ spec:
           value: "https://your-repo-url.git"
         - name: revision
           value: "main"
-  
+
     - name: lint
       taskRef:
         name: flake8
@@ -36,7 +40,7 @@ spec:
             - "--max-complexity=10"
             - "--max-line-length=127"
             - "--statistics"
-    
+
     - name: run-tests
       taskRef:
         name: nose
@@ -52,3 +56,17 @@ spec:
           value: "sqlite:///test.db"
         - name: args
           value: "-v --with-spec --spec-color"
+
+    - name: build
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      runAfter:
+        - lint
+        - run-tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: IMAGE
+          value: "$(params.build-image)"
